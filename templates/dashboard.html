@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Panel upravlenie{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h4>RFID skaneri simulyaciyasi</h4>
+            </div>
+            <div class="card-body">
+                <form action="{% url 'dashboard' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="rfid_tag" class="form-label">RFID-tag ti jazin</label>
+                        <input type="text" class="form-control" name="rfid_tag" id="rfid_tag" placeholder="e.g., A1-B2-C3-D4" required autofocus>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Kirgiziw Kirdi / Shiqti</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="col-md-8">
+        <h2>Parkovkadagi mashinalar</h2>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">Avtomobil nomeri</th>
+                        <th scope="col">Marka ham modeli</th>
+                        <th scope="col">Kirgen waqti</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in sessions %}
+                    <tr>
+                        <td><strong>{{ session.car.license_plate }}</strong></td>
+                        <td>{{ session.car }}</td>
+                        <td>{{ session.entry_time|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="text-center">Hazir avtoparkovkada mashinalar joq</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
