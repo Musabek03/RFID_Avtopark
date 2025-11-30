@@ -1,8 +1,10 @@
 from django.urls import path
-from .views import DashboardView, HistoryListView, CarCreateView
+from . import views
 
 urlpatterns = [
-    path('', DashboardView.as_view(), name="dashboard"),
-    path('history/', HistoryListView.as_view(), name="history"),
-    path('add-car/', CarCreateView.as_view(), name="add_car"),
+   
+    path('', views.index, name='dashboard'),
+    path('history/', views.history, name='history'),
+    path('add-car/', views.add_car, name='add_car'),
+    path('api/scan/', views.rfid_api, name='rfid_api'),
 ]

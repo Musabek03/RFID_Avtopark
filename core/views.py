@@ -1,62 +1,100 @@
 from django.shortcuts import render, redirect
-from django.views import View
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Car, EntryLog
+from .forms import CarForm # Если у тебя есть формы, иначе удали эту строку и используй HTML форму
+import json
+from datetime import timedelta
 from django.utils import timezone
-from .models import Car, ParkingSession
-from django.contrib import messages
-from django.views.generic import ListView, CreateView
-from .forms import CarForm
-from django.urls import reverse_lazy
 
-
-class DashboardView(ListView):
-    model = ParkingSession
-    template_name = 'dashboard.html'  
-    context_object_name = 'sessions'
-
-    def get_queryset(self):
-        return ParkingSession.objects.filter(is_inside=True).order_by('-entry_time')
+#Dashboard
+def index(request):
+    cars_inside = Car.objects.filter(is_inside=True).order_by('-created_at')
     
+    count = cars_inside.count()
+    
+    return render(request, 'dashboard.html', {
+        'cars': cars_inside,
+        'count': count
+    })
 
-    def post(self, request, *args, **kwargs):
-        
-        rfid_tag = request.POST.get('rfid_tag')
-        
-        try:
-            car = Car.objects.get(rfid_tag=rfid_tag)
-        except Car.DoesNotExist:
-            messages.error(request, f"{rfid_tag} Tegli avtomobil tabilmadi!")
-            return redirect('dashboard') 
+def history(request):
+    logs = EntryLog.objects.select_related('car').order_by('-timestamp')
+    return render(request, 'history.html', {'logs': logs})
 
-        
-        active_session = ParkingSession.objects.filter(car=car, is_inside=True).first()
-
-        if active_session:
-            active_session.exit_time = timezone.now()
-            active_session.is_inside = False
-            active_session.save()
-            messages.success(request, f"Avtomobil {car.license_plate} parkovkadan shiqti.")
+# Add car
+def add_car(request):
+    tag_from_url = request.GET.get('tag')
+    
+    if request.method == 'POST':
+        form = CarForm(request.POST)
+        if form.is_valid():
+            form.save() 
+            return redirect('dashboard')
+    else:
+        if tag_from_url:
+            form = CarForm(initial={'rfid_tag': tag_from_url})
         else:
-            ParkingSession.objects.create(car=car)
-            messages.success(request, f"Avtomobil {car.license_plate} parkovkaga kirdi.")
-        
-        return redirect('dashboard') 
+            form = CarForm()
+            
+    return render(request, 'add_car.html', {'form': form})
 
+# API for scanner
+@csrf_exempt
+def rfid_api(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            tag = data.get('rfid_tag')
+            
+            if not tag:
+                return JsonResponse({'status': 'error', 'message': 'Teg joq'}, status=400)
 
+            MIN_DELAY_SECONDS = 60 
 
-class HistoryListView(ListView):
-    model = ParkingSession
-    template_name = 'history.html'
-    context_object_name = 'parking_sessions' 
-    queryset = ParkingSession.objects.all().order_by('-entry_time')
+            try:
+                car = Car.objects.get(rfid_tag=tag)
+                authorized = True
+                
+                last_log = EntryLog.objects.filter(car=car).order_by('-timestamp').first()
+                
+                if last_log:
+                    time_diff = timezone.now() - last_log.timestamp
+                    if time_diff < timedelta(seconds=MIN_DELAY_SECONDS):
+                        return JsonResponse({
+                            'status': 'warning', 
+                            'message': f"Juda tez! Kutin {int(60 - time_diff.total_seconds())} sek.",
+                            'authorized': False
+                        })
 
+                if car.is_inside:
+                    action = 'OUT'
+                    message = f"🚗 Shigiw: {car.title}"
+                    car.is_inside = False 
+                else:
+                    action = 'IN'
+                    message = f"🚙 Kiriw: {car.title}"
+                    car.is_inside = True 
+                
+                car.save() 
 
+            except Car.DoesNotExist:
+                car = None
+                authorized = False
+                action = 'DENIED'
+                message = "Biytanis avtomobil! Ruxsat joq"
 
-class CarCreateView(CreateView):
-    model = Car
-    form_class = CarForm
-    template_name = 'add_car.html'
-    success_url = reverse_lazy('dashboard') 
+            EntryLog.objects.create(
+                car=car,
+                rfid_tag=tag,
+                is_authorized=authorized,
+                action=action
+            )
 
-    def form_valid(self, form):
-        messages.success(self.request, f"Avtomobil {form.instance.license_plate} qosildi.")
-        return super().form_valid(form)
+            print(f"📡 SCAN: {tag} -> {action}")
+            return JsonResponse({'status': 'success', 'message': message, 'authorized': authorized})
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Tek gana POST zaproslar'}, status=405)

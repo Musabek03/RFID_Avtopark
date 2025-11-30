@@ -3,35 +3,43 @@
 {% block title %}Avtomobil qosiw{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row justify-content-center mt-4">
     <div class="col-md-8 col-lg-6">
-        <div class="card">
-            <div class="card-header">
-                <h3 class="card-title">Jana avtomobil registraciyasi</h3>
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="card-title mb-0">🚗 Jana avtomobil registraciyasi</h3>
             </div>
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
                     
-                   
+                    <!-- Цикл по полям формы -->
                     {% for field in form %}
                         <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
-                            <input type="{{ field.field.widget.input_type }}" 
-                                   name="{{ field.name }}" 
-                                   id="{{ field.id_for_label }}"
-                                   class="form-control {% if field.errors %}is-invalid{% endif %}"
-                                   value="{{ field.value|default:'' }}">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-bold">
+                                {{ field.label }}
+                            </label>
+                            
+                            <!-- Django сам вставит input с классом form-control -->
+                            {{ field }}
+                            
+                            <!-- Вывод ошибок, если поле не заполнено -->
                             {% if field.errors %}
-                                <div class="invalid-feedback">
+                                <div class="text-danger small mt-1">
                                     {{ field.errors.as_text }}
                                 </div>
+                            {% endif %}
+                            
+                            <!-- Подсказки к полям (help_text), если есть -->
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
                             {% endif %}
                         </div>
                     {% endfor %}
 
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg">Saqlaw</button>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg">💾 Saqlaw</button>
+                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Bekor qiliw</a>
                     </div>
                 </form>
             </div>

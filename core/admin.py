@@ -1,13 +1,13 @@
 from django.contrib import admin
-from .models import Car, ParkingSession
+from .models import Car, EntryLog
 
 @admin.register(Car)
 class CarAdmin(admin.ModelAdmin):
-    list_display = ('license_plate', 'brand', 'model', 'rfid_tag')
-    search_fields = ('license_plate', 'rfid_tag')
+    list_display = ('title', 'owner', 'rfid_tag', 'created_at')
+    search_fields = ('title', 'rfid_tag', 'owner')
 
-@admin.register(ParkingSession)
-class ParkingSessionAdmin(admin.ModelAdmin):
-    list_display = ('car', 'entry_time', 'exit_time', 'is_inside')
-    list_filter = ('is_inside', 'entry_time')
-    search_fields = ('car__license_plate',)
+@admin.register(EntryLog)
+class EntryLogAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'car', 'rfid_tag', 'is_authorized')
+    list_filter = ('is_authorized', 'timestamp')
+    readonly_fields = ('timestamp', 'rfid_tag', 'car')

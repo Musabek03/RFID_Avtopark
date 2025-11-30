@@ -1,29 +1,42 @@
 from django.db import models
-from django.utils import timezone
-
 
 class Car(models.Model):
-    license_plate = models.CharField(max_length=50, unique=True, verbose_name="Avto_Nomer")
-    brand = models.CharField(max_length=50, verbose_name="Marka")
-    model = models.CharField(max_length=50, verbose_name="Model")
-    owner_name = models.CharField(max_length=100, blank=True, verbose_name="Avtomobil iyesi")
-    rfid_tag = models.CharField(max_length=100, unique=True, verbose_name="RFID-tag")
-
-    def __str__(self):
-        return f"Avtomobil nomeri: {self.license_plate} ||  Avtomobil modeli: {self.model} || Avtomobil iyesi: {self.owner_name}"
-
-
-class ParkingSession(models.Model):
-    car  = models.ForeignKey(Car, on_delete=models.CASCADE, verbose_name="Avtomobil", related_name="Session")
-    entry_time = models.DateTimeField(default=timezone.now, verbose_name="Kiriw waqti")
-    exit_time =  models.DateTimeField(null=True, blank=True, verbose_name="Shigiw waqti")
-    is_inside = models.BooleanField(default=True, verbose_name="Avtomobil parkovkada")
-
-    def __str__(self):
-        return f"{self.car} ushin sessiya {self.entry_time.strftime('%Y-%m-%d %H:%M')} da baslandi"
+    title = models.CharField("Avtomovil nomeri", max_length=50)
+    owner = models.CharField("Iyesi", max_length=100, blank=True)
+    rfid_tag = models.CharField("RFID metka", max_length=50, unique=True)
+    description = models.TextField("Opisanie", blank=True)
     
-    @property
-    def duration(self):
-        if self.exit_time:
-            return self.exit_time - self.entry_time
-        return None
+    # НОВОЕ ПОЛЕ: Где сейчас машина? (False = Снаружи, True = Внутри)
+    is_inside = models.BooleanField("Avtoparkte", default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} ({self.owner})"
+
+    class Meta:
+        verbose_name = "Avtomobil"
+        verbose_name_plural = "Avtomobiller"
+
+class EntryLog(models.Model):
+    ACTION_CHOICES = [
+        ('IN', 'Вход (Kiriw)'),
+        ('OUT', 'Выход (Shigiw)'),
+        ('DENIED', 'Отказано (Inkar etildi)') # Для чужих меток
+    ]
+
+    car = models.ForeignKey(Car, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Avtomobil")
+    rfid_tag = models.CharField("Oqilgan teg", max_length=50)
+    timestamp = models.DateTimeField("Waqit", auto_now_add=True)
+    is_authorized = models.BooleanField("Ruxsat berilgen", default=False)
+    
+    # НОВОЕ ПОЛЕ: Тип действия
+    action = models.CharField("Status", max_length=10, choices=ACTION_CHOICES, default='DENIED')
+
+    def __str__(self):
+        return f"{self.timestamp.strftime('%H:%M')} - {self.get_action_display()}"
+
+    class Meta:
+        verbose_name = "Kirdi shiqti jurnali"
+        verbose_name_plural = "Kirdi shiqti jurnali"
+        ordering = ['-timestamp']
