@@ -28,43 +28,36 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
-                        <th>Avtomobil nomeri (Номер)</th>
-                        <th>Iyesi (Владелец)</th>
+                        <th>Avtomobil nomeri</th>
+                        <th>Iyesi</th>
                         <th>RFID Kod</th>
-                        <th>Halati (Статус)</th>
+                        <th>Waqit (Dawamlılıǵı)</th> <!-- JANA USTIN -->
+                        <th>Halati</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for car in cars %}
                     <tr>
-                        <!-- 1. Порядковый номер -->
                         <td>{{ forloop.counter }}</td>
-
-                        <!-- 2. Номер машины -->
-                        <td>
-                            <strong class="fs-5">{{ car.title }}</strong>
-                        </td>
-
-                        <!-- 3. Владелец -->
+                        <td><strong class="fs-5">{{ car.title }}</strong></td>
                         <td>{{ car.owner }}</td>
-
-                        <!-- 4. RFID -->
                         <td><code class="text-muted">{{ car.rfid_tag }}</code></td>
 
-                        <!-- 5. Статус -->
+                        <!-- WAQITTI KORSETETUG'IN BÖLIM -->
+                        <td>
+                            <span class="fw-bold text-primary">
+                                ⏱ {{ car.get_duration }}
+                            </span>
+                        </td>
+
                         <td>
                             <span class="badge bg-success rounded-pill px-3 py-2">
-                                🅿️ Parkovkada (Внутри)
+                                🅿️ Parkovkada (Ishinde)
                             </span>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center py-5 text-muted">
-                            <h4>Avtopark bos (Парковка пуста)</h4>
-                            <p>Hazirshe hamme avtomobiller sirtta.</p>
-                        </td>
-                    </tr>
+                    <!-- ... -->
                     {% endfor %}
                 </tbody>
             </table>

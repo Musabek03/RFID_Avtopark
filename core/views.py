@@ -50,31 +50,61 @@ def rfid_api(request):
             if not tag:
                 return JsonResponse({'status': 'error', 'message': 'Teg joq'}, status=400)
 
-            MIN_DELAY_SECONDS = 60 
+            duration_text = None 
 
             try:
                 car = Car.objects.get(rfid_tag=tag)
                 authorized = True
                 
+                # --- WAQITTI TEKSERIW LOGIKASI O'ZGERDI ---
                 last_log = EntryLog.objects.filter(car=car).order_by('-timestamp').first()
                 
                 if last_log:
+                    # Eger sońǵı márte SHIQQAN (OUT) bolsa -> 10 sekund kutedi
+                    if last_log.action == 'OUT':
+                        MIN_DELAY = 10
+                    # Eger sońǵı márte KIRGEN (IN) bolsa -> 60 sekund kutedi (qayta oqip qalmasligi ushin)
+                    else:
+                        MIN_DELAY = 60
+
                     time_diff = timezone.now() - last_log.timestamp
-                    if time_diff < timedelta(seconds=MIN_DELAY_SECONDS):
+                    
+                    if time_diff < timedelta(seconds=MIN_DELAY):
+                        remaining = int(MIN_DELAY - time_diff.total_seconds())
                         return JsonResponse({
                             'status': 'warning', 
-                            'message': f"Juda tez! Kutin {int(60 - time_diff.total_seconds())} sek.",
+                            'message': f"Juda tez! Kutin {remaining} sek.",
                             'authorized': False
                         })
+                # ---------------------------------------------
 
                 if car.is_inside:
+                    # --- SHIG'IW (OUT) ---
                     action = 'OUT'
                     message = f"🚗 Shigiw: {car.title}"
+                    
+                    if car.last_entry_time:
+                        diff = timezone.now() - car.last_entry_time
+                        total_seconds = int(diff.total_seconds())
+                        
+                        days = total_seconds // 86400
+                        hours = (total_seconds % 86400) // 3600
+                        minutes = (total_seconds % 3600) // 60
+                        
+                        if days > 0:
+                            duration_text = f"{days} kun, {hours} saat, {minutes} min"
+                        elif hours > 0:
+                            duration_text = f"{hours} saat {minutes} min"
+                        else:
+                            duration_text = f"{minutes} min"
+
                     car.is_inside = False 
                 else:
+                    # --- KIRIW (IN) ---
                     action = 'IN'
                     message = f"🚙 Kiriw: {car.title}"
                     car.is_inside = True 
+                    car.last_entry_time = timezone.now()
                 
                 car.save() 
 
@@ -88,7 +118,8 @@ def rfid_api(request):
                 car=car,
                 rfid_tag=tag,
                 is_authorized=authorized,
-                action=action
+                action=action,
+                stay_duration=duration_text
             )
 
             print(f"📡 SCAN: {tag} -> {action}")

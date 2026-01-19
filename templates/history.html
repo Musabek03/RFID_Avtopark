@@ -12,74 +12,84 @@
 
     <div class="card shadow">
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover align-middle">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>#</th>
-                            <th>Waqit</th>
-                            <th>RFID Kod</th>
-                            <th>Avtomobil</th>
-                            <th>Iyesi (Владелец)</th>
-                            <th>Halati (Статус)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in logs %}
-                        <tr>
-                            <!-- 1. Номер строки -->
-                            <td>{{ forloop.counter }}</td>
+            
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>#</th>
+                <th>Waqit</th>
+                <th>RFID Kod</th>
+                <th>Avtomobil</th>
+                <th>Iyesi (Владелец)</th>
+                <th>Turǵan waqtı</th> <!-- JANA USTIN -->
+                <th>Halati (Статус)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <!-- 1. Nomer -->
+                <td>{{ forloop.counter }}</td>
 
-                            <!-- 2. Время -->
-                            <td>{{ log.timestamp|date:"d.m.Y H:i:s" }}</td>
+                <!-- 2. Waqit -->
+                <td>{{ log.timestamp|date:"d.m.Y H:i:s" }}</td>
 
-                            <!-- 3. Тег -->
-                            <td><code class="text-dark">{{ log.rfid_tag }}</code></td>
-                            
-                            <!-- 4. Машина -->
-                            <td>
-                                {% if log.car %}
-                                    <strong>{{ log.car.title }}</strong>
-                                {% else %}
-                                    <span class="text-muted">---</span>
-                                {% endif %}
-                            </td>
-                            
-                            <!-- 5. Владелец -->
-                            <td>
-                                {% if log.car %}
-                                    {{ log.car.owner }}
-                                {% else %}
-                                    <span class="text-muted">---</span>
-                                {% endif %}
-                            </td>
+                <!-- 3. Teg -->
+                <td><code class="text-dark">{{ log.rfid_tag }}</code></td>
+                
+                <!-- 4. Mashina -->
+                <td>
+                    {% if log.car %}
+                        <strong>{{ log.car.title }}</strong>
+                    {% else %}
+                        <span class="text-muted">---</span>
+                    {% endif %}
+                </td>
+                
+                <!-- 5. Iyesi -->
+                <td>
+                    {% if log.car %}
+                        {{ log.car.owner }}
+                    {% else %}
+                        <span class="text-muted">---</span>
+                    {% endif %}
+                </td>
 
-                            <!-- 6. Статус (Вход/Выход) -->
-                            <td>
-                                {% if log.action == 'IN' %}
-                                    <span class="badge bg-success rounded-pill px-3">
-                                        📥 Kiriw
-                                    </span>
-                                {% elif log.action == 'OUT' %}
-                                    <span class="badge bg-warning text-dark rounded-pill px-3">
-                                        📤 Shigiw
-                                    </span>
-                                {% else %}
-                                    <span class="badge bg-danger rounded-pill px-3">
-                                        ⛔ Biykar etildi
-                                    </span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-4 text-muted">
-                                Hazirshe tariyx bos (История пуста).
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                <!-- 6. TURG'AN WAQTI (Jana kod) -->
+                <td>
+                    {% if log.action == 'OUT' and log.stay_duration %}
+                        <span class="fw-bold text-primary">⏱ {{ log.stay_duration }}</span>
+                    {% else %}
+                        <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+
+                <!-- 7. Status -->
+                <td>
+                    {% if log.action == 'IN' %}
+                        <span class="badge bg-success rounded-pill px-3">
+                            📥 Kiriw
+                        </span>
+                    {% elif log.action == 'OUT' %}
+                        <span class="badge bg-warning text-dark rounded-pill px-3">
+                            📤 Shigiw
+                        </span>
+                    {% else %}
+                        <span class="badge bg-danger rounded-pill px-3">
+                            ⛔ Biykar etildi
+                        </span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-4 text-muted">
+                    Hazirshe tariyx bos (История пуста).
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
             </div>
         </div>
     </div>
