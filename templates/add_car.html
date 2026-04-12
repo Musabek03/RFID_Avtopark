@@ -1,49 +1,94 @@
 {% extends 'base.html' %}
+{% block title %}Avto qosıw — Aqıllı Parkovka{% endblock %}
 
-{% block title %}Avtomobil qosiw{% endblock %}
+{% block extra_css %}
+<style>
+  .form-container {
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .page-header { margin-bottom: 2rem; text-align: center; }
+  .page-header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-main); }
+  .page-header p { color: var(--text-muted); }
+
+  .form-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5rem;
+  }
+  .full-width { grid-column: 1 / -1; }
+
+  /* Skaner haqinda xabar */
+  .scan-alert {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: var(--primary);
+    padding: 1rem; border-radius: 8px;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 1rem;
+    font-size: 0.95rem; font-weight: 500;
+  }
+  .scan-alert i { font-size: 1.2rem; animation: pulse 2s infinite; }
+
+  .form-actions {
+    display: flex; gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .form-actions .btn { flex: 1; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center mt-4">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
-                <h3 class="card-title mb-0">🚗 Jana avtomobil registraciyasi</h3>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    
-                    <!-- Цикл по полям формы -->
-                    {% for field in form %}
-                        <div class="mb-3">
-                            <label for="{{ field.id_for_label }}" class="form-label fw-bold">
-                                {{ field.label }}
-                            </label>
-                            
-                            <!-- Django сам вставит input с классом form-control -->
-                            {{ field }}
-                            
-                            <!-- Вывод ошибок, если поле не заполнено -->
-                            {% if field.errors %}
-                                <div class="text-danger small mt-1">
-                                    {{ field.errors.as_text }}
-                                </div>
-                            {% endif %}
-                            
-                            <!-- Подсказки к полям (help_text), если есть -->
-                            {% if field.help_text %}
-                                <div class="form-text">{{ field.help_text }}</div>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
+<div class="form-container">
+  <div class="page-header">
+    <h1>Taza avtomobil qosıw</h1>
+    <p>Bazamızda joq bolǵan jańa RFID tag-ti dizimnen ótkeriń</p>
+  </div>
 
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success btn-lg">💾 Saqlaw</button>
-                        <a href="{% url 'dashboard' %}" class="btn btn-secondary">Bekor qiliw</a>
-                    </div>
-                </form>
-            </div>
+  {% if request.GET.tag %}
+  <div class="scan-alert">
+    <i>📡</i>
+    <div>Skanerden tag oqıldı: <span style="font-family: var(--font-mono); font-weight: bold; color: var(--text-main);">{{ request.GET.tag }}</span></div>
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        
+        <div class="form-grid">
+          <!-- Raqam -->
+          <div class="form-group">
+            <label class="form-label">Ma'mleketlik nomeri</label>
+            <input type="text" name="title" class="form-control" placeholder="95 A 111 AA" value="{{ form.title.value|default:'' }}" required>
+          </div>
+
+          <!-- Ega -->
+          <div class="form-group">
+            <label class="form-label">Iyesi (F.I.SH)</label>
+            <input type="text" name="owner" class="form-control" placeholder="Atı familiyası" value="{{ form.owner.value|default:'' }}">
+          </div>
+
+          <!-- RFID -->
+          <div class="form-group full-width">
+            <label class="form-label">RFID Kodı</label>
+            <input type="text" name="rfid_tag" class="form-control" style="font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 2px;" placeholder="Skaner kútilmekte..." value="{{ form.rfid_tag.value|default:'' }}" required>
+          </div>
+
+          <!-- Izoh -->
+          <div class="form-group full-width">
+            <label class="form-label">Qosımsha maǵlıwmat</label>
+            <textarea name="description" class="form-control" rows="3" placeholder="Mashina reńi, modeli yamasa basqa maǵlıwmatlar...">{{ form.description.value|default:'' }}</textarea>
+          </div>
         </div>
+
+        <div class="form-actions">
+          <a href="{% url 'dashboard' %}" class="btn btn-ghost">Biykar etiw</a>
+          <button type="submit" class="btn btn-primary">Saqlaw</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 {% endblock %}

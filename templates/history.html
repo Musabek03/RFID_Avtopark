@@ -1,97 +1,114 @@
 {% extends 'base.html' %}
+{% block title %}Tariyx — Aqıllı Parkovka{% endblock %}
 
-{% block title %}Kiriw-shigiw tariyxi{% endblock %}
+{% block extra_css %}
+<style>
+  .header-actions {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 2rem;
+  }
+  .page-title h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-main); }
+  .page-title p { color: var(--text-muted); font-size: 0.95rem; }
+
+  /* Filtr knopkalari */
+  .filter-group {
+    display: inline-flex;
+    background: #e5e7eb;
+    padding: 0.3rem;
+    border-radius: 10px;
+  }
+  .filter-btn {
+    padding: 0.5rem 1.2rem;
+    font-size: 0.9rem; font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { color: var(--text-main); }
+  .filter-btn.active { background: white; color: var(--text-main); box-shadow: var(--shadow); }
+
+  /* Qatardagi renler */
+  tbody tr.row-in td:first-child { box-shadow: inset 4px 0 0 var(--success); }
+  tbody tr.row-out td:first-child { box-shadow: inset 4px 0 0 var(--warning); }
+  tbody tr.row-denied td:first-child { box-shadow: inset 4px 0 0 var(--danger); }
+  
+  .time-cell .date { display: block; font-size: 0.8rem; color: var(--text-muted); }
+  .time-cell .time { font-weight: 600; color: var(--text-main); }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>📜 Kiriw ham shigiw tariyxi</h2>
-        <!-- Кнопка обновления страницы -->
-        <a href="" class="btn btn-outline-primary">🔄 Janalaw</a>
-    </div>
+<div class="header-actions">
+  <div class="page-title">
+    <h1>Kirdi-shıqtı tariyxı</h1>
+    <p>Barlıq skanerlengen maglıwmatlar dizimi</p>
+  </div>
+  
+  <div class="filter-group">
+    <a href="?filter=all" class="filter-btn {% if not request.GET.filter or request.GET.filter == 'all' %}active{% endif %}">Hámmesi</a>
+    <a href="?filter=IN" class="filter-btn {% if request.GET.filter == 'IN' %}active{% endif %}">Kiriw</a>
+    <a href="?filter=OUT" class="filter-btn {% if request.GET.filter == 'OUT' %}active{% endif %}">Shıǵıw</a>
+    <a href="?filter=DENIED" class="filter-btn {% if request.GET.filter == 'DENIED' %}active{% endif %}">Biykar etildi</a>
+  </div>
+</div>
 
-    <div class="card shadow">
-        <div class="card-body">
-            
-    <table class="table table-bordered table-hover align-middle">
-        <thead class="table-dark">
-            <tr>
-                <th>#</th>
-                <th>Waqit</th>
-                <th>RFID Kod</th>
-                <th>Avtomobil</th>
-                <th>Iyesi (Владелец)</th>
-                <th>Turǵan waqtı</th> <!-- JANA USTIN -->
-                <th>Halati (Статус)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for log in logs %}
-            <tr>
-                <!-- 1. Nomer -->
-                <td>{{ forloop.counter }}</td>
-
-                <!-- 2. Waqit -->
-                <td>{{ log.timestamp|date:"d.m.Y H:i:s" }}</td>
-
-                <!-- 3. Teg -->
-                <td><code class="text-dark">{{ log.rfid_tag }}</code></td>
-                
-                <!-- 4. Mashina -->
-                <td>
-                    {% if log.car %}
-                        <strong>{{ log.car.title }}</strong>
-                    {% else %}
-                        <span class="text-muted">---</span>
-                    {% endif %}
-                </td>
-                
-                <!-- 5. Iyesi -->
-                <td>
-                    {% if log.car %}
-                        {{ log.car.owner }}
-                    {% else %}
-                        <span class="text-muted">---</span>
-                    {% endif %}
-                </td>
-
-                <!-- 6. TURG'AN WAQTI (Jana kod) -->
-                <td>
-                    {% if log.action == 'OUT' and log.stay_duration %}
-                        <span class="fw-bold text-primary">⏱ {{ log.stay_duration }}</span>
-                    {% else %}
-                        <span class="text-muted">-</span>
-                    {% endif %}
-                </td>
-
-                <!-- 7. Status -->
-                <td>
-                    {% if log.action == 'IN' %}
-                        <span class="badge bg-success rounded-pill px-3">
-                            📥 Kiriw
-                        </span>
-                    {% elif log.action == 'OUT' %}
-                        <span class="badge bg-warning text-dark rounded-pill px-3">
-                            📤 Shigiw
-                        </span>
-                    {% else %}
-                        <span class="badge bg-danger rounded-pill px-3">
-                            ⛔ Biykar etildi
-                        </span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="7" class="text-center py-4 text-muted">
-                    Hazirshe tariyx bos (История пуста).
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
+<div class="card">
+  <div class="card-body" style="padding:0">
+    {% if logs %}
+    <table>
+      <thead>
+        <tr>
+          <th style="padding-left: 2rem;">Waqtı</th>
+          <th>Avtomobil</th>
+          <th>Iyesi</th>
+          <th>RFID Tag</th>
+          <th>Túrǵan waqtı</th>
+          <th>Háleket</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr class="row-{{ log.action|lower }}">
+          <td class="time-cell" style="padding-left: 2rem;">
+            <span class="time">{{ log.timestamp|date:"H:i:s" }}</span>
+            <span class="date">{{ log.timestamp|date:"d.m.Y" }}</span>
+          </td>
+          <td>
+            {% if log.car %}
+              <span class="plate">{{ log.car.title }}</span>
+            {% else %}
+              <span class="text-muted">Námálim</span>
+            {% endif %}
+          </td>
+          <td>{{ log.car.owner|default:"—" }}</td>
+          <td><span class="mono-tag">{{ log.rfid_tag }}</span></td>
+          <td>
+            {% if log.action == 'OUT' and log.stay_duration %}
+              <span class="duration">{{ log.stay_duration }}</span>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if log.action == 'IN' %}
+              <span class="badge badge-in">Kiriw</span>
+            {% elif log.action == 'OUT' %}
+              <span class="badge badge-out">Shıǵıw</span>
+            {% else %}
+              <span class="badge badge-denied">Biykar etildi</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
     </table>
-            </div>
-        </div>
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">📁</div>
+      <p>Kórsetilgen filtr boyınsha maǵlıwmat tabılmadı.</p>
     </div>
+    {% endif %}
+  </div>
 </div>
 {% endblock %}
