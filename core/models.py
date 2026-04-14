@@ -42,7 +42,7 @@ class Car(models.Model):
         verbose_name_plural = "Avtomobiller"
 
 
-# --- ENTRYLOG MODELI (Janalandi) ---
+# --- ENTRYLOG MODELI 
 class EntryLog(models.Model):
     ACTION_CHOICES = [
         ('IN', 'Вход (Kiriw)'),

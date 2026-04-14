@@ -8,7 +8,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 
-# ─── DASHBOARD ────────────────────────────────────────────────────────────────
+# ─── DASHBOARD 
 def index(request):
     cars_inside = Car.objects.filter(is_inside=True).order_by('-last_entry_time')
     count = cars_inside.count()
@@ -30,7 +30,7 @@ def index(request):
     })
 
 
-# ─── HISTORY ──────────────────────────────────────────────────────────────────
+# ─── HISTORY 
 def history(request):
     logs = EntryLog.objects.select_related('car').order_by('-timestamp')
 
@@ -42,7 +42,7 @@ def history(request):
     return render(request, 'history.html', {'logs': logs})
 
 
-# ─── ADD CAR ──────────────────────────────────────────────────────────────────
+# ─── ADD CAR 
 def add_car(request):
     tag_from_url = request.GET.get('tag')
 
@@ -58,18 +58,18 @@ def add_car(request):
     return render(request, 'add_car.html', {'form': form})
 
 
-# ─── RFID API ─────────────────────────────────────────────────────────────────
+# ─── RFID API 
 @csrf_exempt
 def rfid_api(request):
     if request.method != 'POST':
-        return JsonResponse({'status': 'error', 'message': 'Faqat POST'}, status=405)
+        return JsonResponse({'status': 'error', 'message': 'Tek ǵana POST'}, status=405)
 
     try:
         data = json.loads(request.body)
         tag  = data.get('rfid_tag', '').strip()
 
         if not tag:
-            return JsonResponse({'status': 'error', 'message': 'Tag yo\'q'}, status=400)
+            return JsonResponse({'status': 'error', 'message': 'Tag joq'}, status=400)
 
         duration_text = None
 
@@ -86,14 +86,14 @@ def rfid_api(request):
                     remaining = int(min_delay - time_diff.total_seconds())
                     return JsonResponse({
                         'status':     'warning',
-                        'message':    f"Juda tez! {remaining} sek kuting.",
+                        'message':    f"Juda tez! {remaining} sek kutiń",
                         'authorized': False,
                     })
 
             if car.is_inside:
                 # ─ CHIQISH ─
                 action  = 'OUT'
-                message = f"↑ Chiqish: {car.title}"
+                message = f"↑ Shıǵıw: {car.title}"
 
                 if car.last_entry_time:
                     diff          = timezone.now() - car.last_entry_time
@@ -103,9 +103,9 @@ def rfid_api(request):
                     minutes = (total_seconds % 3600) // 60
 
                     if days > 0:
-                        duration_text = f"{days} kun, {hours} soat, {minutes} min"
+                        duration_text = f"{days} kun, {hours} saat, {minutes} min"
                     elif hours > 0:
-                        duration_text = f"{hours} soat {minutes} min"
+                        duration_text = f"{hours} saat {minutes} min"
                     else:
                         duration_text = f"{minutes} min"
 
@@ -114,7 +114,7 @@ def rfid_api(request):
             else:
                 # ─ KIRISH ─
                 action  = 'IN'
-                message = f"↓ Kirish: {car.title}"
+                message = f"↓ Kiriw: {car.title}"
                 car.is_inside       = True
                 car.last_entry_time = timezone.now()
 
@@ -124,7 +124,7 @@ def rfid_api(request):
             car        = None
             authorized = False
             action     = 'DENIED'
-            message    = f"Noma'lum teg: {tag} — ruxsat yo'q"
+            message    = f"Biytanis teg: {tag} — ruxsat joq"
 
         EntryLog.objects.create(
             car=car,
@@ -143,6 +143,6 @@ def rfid_api(request):
         })
 
     except json.JSONDecodeError:
-        return JsonResponse({'status': 'error', 'message': 'Noto\'g\'ri JSON'}, status=400)
+        return JsonResponse({'status': 'error', 'message': 'Nadurıs JSON'}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
