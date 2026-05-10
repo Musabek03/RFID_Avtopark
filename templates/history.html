@@ -5,36 +5,33 @@
 <style>
   .header-actions {
     display: flex; justify-content: space-between; align-items: flex-end;
-    margin-bottom: 2rem;
+    margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap;
   }
-  .page-title h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-main); }
-  .page-title p { color: var(--text-muted); font-size: 0.95rem; }
+  .page-title h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--text-main); }
+  .page-title p { color: var(--text-muted); font-size: 0.92rem; }
 
-  /* Filtr knopkalari */
-  .filter-group {
-    display: inline-flex;
-    background: #e5e7eb;
-    padding: 0.3rem;
-    border-radius: 10px;
+  .filter-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr auto auto;
+    gap: 0.75rem;
+    align-items: end;
+    padding: 1rem 1.5rem;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
   }
-  .filter-btn {
-    padding: 0.5rem 1.2rem;
-    font-size: 0.9rem; font-weight: 500;
-    color: var(--text-muted);
-    text-decoration: none;
-    border-radius: 6px;
-    transition: all 0.2s;
+  .filter-form label { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; margin-bottom: 0.25rem; display: block; text-transform: uppercase; letter-spacing: 0.04em; }
+  @media (max-width: 900px) {
+    .filter-form { grid-template-columns: 1fr 1fr; }
   }
-  .filter-btn:hover { color: var(--text-main); }
-  .filter-btn.active { background: white; color: var(--text-main); box-shadow: var(--shadow); }
 
-  /* Qatardagi renler */
-  tbody tr.row-in td:first-child { box-shadow: inset 4px 0 0 var(--success); }
-  tbody tr.row-out td:first-child { box-shadow: inset 4px 0 0 var(--warning); }
+  tbody tr.row-in    td:first-child { box-shadow: inset 4px 0 0 var(--success); }
+  tbody tr.row-out   td:first-child { box-shadow: inset 4px 0 0 var(--warning); }
   tbody tr.row-denied td:first-child { box-shadow: inset 4px 0 0 var(--danger); }
-  
-  .time-cell .date { display: block; font-size: 0.8rem; color: var(--text-muted); }
+  tbody tr.row-cooldown td:first-child { box-shadow: inset 4px 0 0 var(--warning); }
+
+  .time-cell .date { display: block; font-size: 0.78rem; color: var(--text-muted); }
   .time-cell .time { font-weight: 600; color: var(--text-main); }
+  .total-line { padding: 0.85rem 1.5rem; color: var(--text-muted); font-size: 0.85rem; border-bottom: 1px solid var(--border); background: var(--surface-2); }
 </style>
 {% endblock %}
 
@@ -42,20 +39,41 @@
 <div class="header-actions">
   <div class="page-title">
     <h1>Kirdi-shıqtı tariyxı</h1>
-    <p>Barlıq skanerlengen maglıwmatlar dizimi</p>
+    <p>Barlıq skanerlengen maǵlıwmatlar dizimi</p>
   </div>
-  
-  <div class="filter-group">
-    <a href="?filter=all" class="filter-btn {% if not request.GET.filter or request.GET.filter == 'all' %}active{% endif %}">Hámmesi</a>
-    <a href="?filter=IN" class="filter-btn {% if request.GET.filter == 'IN' %}active{% endif %}">Kiriw</a>
-    <a href="?filter=OUT" class="filter-btn {% if request.GET.filter == 'OUT' %}active{% endif %}">Shıǵıw</a>
-    <a href="?filter=DENIED" class="filter-btn {% if request.GET.filter == 'DENIED' %}active{% endif %}">Biykar etildi</a>
+
+  <div style="display:flex; gap:0.5rem;">
+    <a href="{% url 'history_export' %}?{{ request.GET.urlencode }}&format=csv" class="btn btn-ghost">↓ CSV</a>
+    <a href="{% url 'history_export' %}?{{ request.GET.urlencode }}&format=xlsx" class="btn btn-ghost">↓ Excel</a>
   </div>
 </div>
 
 <div class="card">
+  <form method="get" class="filter-form">
+    <div>
+      <label>Háleket</label>
+      {{ form.action }}
+    </div>
+    <div>
+      <label>Izlew</label>
+      {{ form.q }}
+    </div>
+    <div>
+      <label>Sáneden</label>
+      {{ form.date_from }}
+    </div>
+    <div>
+      <label>Sánege shekem</label>
+      {{ form.date_to }}
+    </div>
+    <button type="submit" class="btn btn-primary">Súziw</button>
+    <a href="{% url 'history' %}" class="btn btn-ghost">Tazalaw</a>
+  </form>
+
+  <div class="total-line">Tabıldı: <strong>{{ total }}</strong> jazıw</div>
+
   <div class="card-body" style="padding:0">
-    {% if logs %}
+    {% if page_obj.object_list %}
     <table>
       <thead>
         <tr>
@@ -68,7 +86,7 @@
         </tr>
       </thead>
       <tbody>
-        {% for log in logs %}
+        {% for log in page_obj %}
         <tr class="row-{{ log.action|lower }}">
           <td class="time-cell" style="padding-left: 2rem;">
             <span class="time">{{ log.timestamp|date:"H:i:s" }}</span>
@@ -95,14 +113,29 @@
               <span class="badge badge-in">Kiriw</span>
             {% elif log.action == 'OUT' %}
               <span class="badge badge-out">Shıǵıw</span>
+            {% elif log.action == 'COOLDOWN' %}
+              <span class="badge badge-cooldown">Cooldown</span>
             {% else %}
-              <span class="badge badge-denied">Biykar etildi</span>
+              <span class="badge badge-denied">Inkar etildi</span>
             {% endif %}
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page=1">«</a>
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">‹</a>
+      {% endif %}
+      <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">›</a>
+        <a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">»</a>
+      {% endif %}
+    </div>
+    {% endif %}
     {% else %}
     <div class="empty-state">
       <div class="icon">📁</div>

@@ -1,78 +1,99 @@
-import socket
-import time
+"""Standalone TCP client that polls the UHF RFID reader and forwards EPC tags
+to the Django REST endpoint.
+
+Configuration is read from environment variables (or a `.env` file in the
+project root). See `.env.example` for the full list of supported variables.
+"""
+
+from __future__ import annotations
+
 import binascii
-import requests
-import json
+import logging
+import os
+import socket
 import sys
+import time
+from pathlib import Path
 
-# --- SAZLAMALAR ---
-READER_IP = '192.168.1.100'
-READER_PORT = 6000
-DJANGO_URL = "http://127.0.0.1:8000/api/scan/"
+import requests
 
-# Wireshark-tan komanda (DB parametri menen Inventory G2)
+try:
+    from dotenv import load_dotenv  # type: ignore
+
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+except Exception:  # pragma: no cover - optional dependency for the scanner host
+    pass
+
+logging.basicConfig(
+    level=os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
+    format="[%(asctime)s] %(levelname)s %(name)s: %(message)s",
+)
+logger = logging.getLogger("rfid-scanner")
+
+READER_IP = os.environ.get("READER_IP", "192.168.1.100")
+READER_PORT = int(os.environ.get("READER_PORT", "6000"))
+DJANGO_URL = os.environ.get("DJANGO_API_URL", "http://127.0.0.1:8000/api/scan/")
+SCANNER_API_TOKEN = os.environ.get("SCANNER_API_TOKEN", "")
+COOLDOWN = int(os.environ.get("LOCAL_COOLDOWN_SECONDS", "5"))
+
 COMMAND = bytes.fromhex("040001DB4B")
 BUFFER_SIZE = 1024
+last_scans: dict[str, float] = {}
 
-# Anti-spam (sol bir mashinanı qayta jiberiwge shekemgi sekund)
-COOLDOWN = 5
-last_scans = {}
 
-def send_to_django(tag):
+def send_to_django(tag: str) -> None:
+    headers = {"Content-Type": "application/json"}
+    if SCANNER_API_TOKEN:
+        headers["X-Api-Token"] = SCANNER_API_TOKEN
     try:
-        payload = {'rfid_tag': tag}
-        response = requests.post(DJANGO_URL, json=payload, timeout=1)
-        if response.status_code == 200:
+        response = requests.post(DJANGO_URL, json={"rfid_tag": tag}, headers=headers, timeout=2)
+        if response.ok:
             data = response.json()
-            print(f"✅ Django: {data['message']}")
+            logger.info("Django: %s", data.get("message", ""))
         else:
-            print(f"⚠️ Django qáteligi: {response.status_code}")
-    except Exception as e:
-        print(f"❌ Sayt penen baylanisa almay atirman: {e}")
+            logger.warning("Django qáteligi: %s %s", response.status_code, response.text[:200])
+    except Exception as exc:
+        logger.error("Sayt penen baylanısa almay atırman: %s", exc)
 
-def main():
-    print("--- RFID SKANER ISKE TÚSIRILMEKTE ---")
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(2)
 
-    while True: # Úzilgen jaǵdayda qayta qosılıw ushın máńgilik cikl
+def main() -> None:
+    logger.info("--- RFID SKANER ISKE TÚSIRILMEKTE ---")
+    logger.info("Reader: %s:%s | API: %s", READER_IP, READER_PORT, DJANGO_URL)
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(2)
+
+    while True:
         try:
-            print(f"🔌 {READER_IP} adresine qosilip atirman...")
-            s.connect((READER_IP, READER_PORT))
-            print("📡 Baylanis ornatildi! Skanerlenbekte...")
+            logger.info("%s:%s adresine qosılıp atırman...", READER_IP, READER_PORT)
+            sock.connect((READER_IP, READER_PORT))
+            logger.info("Baylanıs ornatıldı! Skanerlenbekte...")
 
             while True:
-                s.send(COMMAND)
+                sock.send(COMMAND)
                 try:
-                    data = s.recv(BUFFER_SIZE)
-                    if len(data) > 8: # Eger uzın paket kelgen bolsa
-                        # Maǵlıwmattı tallaw (Parsing)
+                    data = sock.recv(BUFFER_SIZE)
+                    if len(data) > 8:
                         hex_data = binascii.hexlify(data).decode().upper()
-                        # EPC uzınlıǵın izlew (5-bayt)
                         epc_len = data[5]
-                        
                         if 4 <= epc_len <= 32 and len(data) >= 6 + epc_len:
                             epc = hex_data[12 : 12 + (epc_len * 2)]
-                            
-                            # Waqıttı tekseriw (spam qılmaslıq ushın)
                             if time.time() - last_scans.get(epc, 0) > COOLDOWN:
-                                print(f"\n🚗 BELGI: {epc}")
+                                logger.info("BELGI: %s", epc)
                                 send_to_django(epc)
                                 last_scans[epc] = time.time()
-
-                except socket.timeout:
-                    pass # Efirde tınıshlıq
-                
-                time.sleep(0.1) # Sorawlar arasındaǵı pauza
+                except TimeoutError:
+                    pass
+                time.sleep(0.1)
 
         except KeyboardInterrupt:
-            print("\nShıǵıw...")
+            logger.info("Shıǵıw...")
             sys.exit()
-        except Exception as e:
-            print(f"Baylanis qáteligi: {e}. 3 sekundtan soń qayta qosiliw...")
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(2)
+        except Exception as exc:
+            logger.error("Baylanıs qáteligi: %s. 3 sekundtan soń qayta qosılıw...", exc)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(2)
             time.sleep(3)
+
 
 if __name__ == "__main__":
     main()

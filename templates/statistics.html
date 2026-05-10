@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+{% block title %}Statistika — Aqıllı Parkovka{% endblock %}
+
+{% block extra_css %}
+<style>
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  .stat-tile {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem;
+    box-shadow: var(--shadow);
+  }
+  .stat-tile .label { font-size: 0.85rem; color: var(--text-muted); }
+  .stat-tile .value { font-size: 1.95rem; font-weight: 700; margin-top: 0.4rem; color: var(--text-main); }
+  .charts { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
+  .chart-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-main); }
+  .controls { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1.25rem; }
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .charts { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-actions" style="display: flex; justify-content: space-between; align-items: end; margin-bottom: 1.25rem;">
+  <div class="page-title">
+    <h1 style="font-size:1.6rem; font-weight:700; color: var(--text-main); margin-bottom: 0.25rem;">Statistika</h1>
+    <p style="color: var(--text-muted); font-size: 0.92rem;">Avtoparktiń jumıs kórsetkishleri</p>
+  </div>
+  <div class="controls">
+    <label for="days" class="text-muted" style="font-size:0.9rem;">Dáwir:</label>
+    <select id="days" class="form-control" style="width:auto;">
+      <option value="7">7 kún</option>
+      <option value="14">14 kún</option>
+      <option value="30">30 kún</option>
+      <option value="60">60 kún</option>
+      <option value="90">90 kún</option>
+    </select>
+  </div>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-tile"><div class="label">Aktiv avtomobiller</div><div class="value" id="t-active">—</div></div>
+  <div class="stat-tile"><div class="label">Hazir ishinde</div><div class="value" id="t-inside">—</div></div>
+  <div class="stat-tile"><div class="label">Skanerlewler (dáwir)</div><div class="value" id="t-scans">—</div></div>
+  <div class="stat-tile"><div class="label">Inkar etilgenler</div><div class="value" id="t-denied" style="color: var(--danger)">—</div></div>
+</div>
+
+<div class="charts">
+  <div class="chart-card">
+    <h3>Kúnlik dinamika (kiriw / shıǵıw / inkar)</h3>
+    <canvas id="byDayChart" height="120"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Avtomobil túri</h3>
+    <canvas id="byTypeChart" height="180"></canvas>
+  </div>
+</div>
+
+<div class="charts" style="margin-top: 1rem;">
+  <div class="chart-card">
+    <h3>Kún ishi saatlar boyınsha (kiriw + shıǵıw)</h3>
+    <canvas id="byHourChart" height="120"></canvas>
+  </div>
+  <div class="chart-card">
+    <h3>Eń aktiv avtomobiller (TOP-10)</h3>
+    <canvas id="topCarsChart" height="180"></canvas>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script>
+  const VEHICLE_LABELS = {
+    SEDAN: 'Jeńil', TRUCK: 'Júk', BUS: 'Avtobus',
+    MOTO: 'Mototsikl', VAN: 'Mikroavtobus', OTHER: 'Basqa',
+  };
+  let charts = {};
+
+  function color(name) {
+    const map = { primary:'#2563eb', success:'#059669', warning:'#d97706', danger:'#dc2626', muted:'#9ca3af' };
+    return map[name] || '#2563eb';
+  }
+
+  function pivotByDay(rows) {
+    const days = [...new Set(rows.map(r => r.day))].sort();
+    const series = { IN: {}, OUT: {}, DENIED: {} };
+    rows.forEach(r => {
+      if (series[r.action] !== undefined) series[r.action][r.day] = r.count;
+    });
+    const arr = a => days.map(d => a[d] || 0);
+    return { days, IN: arr(series.IN), OUT: arr(series.OUT), DENIED: arr(series.DENIED) };
+  }
+
+  async function load() {
+    const days = document.getElementById('days').value;
+    const r = await fetch('{% url "statistics_api" %}?days=' + days, { credentials: 'same-origin' });
+    const d = await r.json();
+
+    document.getElementById('t-active').textContent  = d.totals.cars_active;
+    document.getElementById('t-inside').textContent  = d.totals.cars_inside;
+    document.getElementById('t-scans').textContent   = d.totals.scans;
+    document.getElementById('t-denied').textContent  = d.totals.denied;
+
+    const byDay = pivotByDay(d.by_day);
+    drawLine('byDayChart', byDay.days, [
+      { label: 'Kiriw',  data: byDay.IN,  borderColor: color('success'), backgroundColor: color('success') + '33' },
+      { label: 'Shıǵıw', data: byDay.OUT, borderColor: color('warning'), backgroundColor: color('warning') + '33' },
+      { label: 'Inkar',  data: byDay.DENIED, borderColor: color('danger'), backgroundColor: color('danger') + '33' },
+    ]);
+
+    drawDoughnut('byTypeChart',
+      d.by_type.map(t => VEHICLE_LABELS[t.vehicle_type] || t.vehicle_type),
+      d.by_type.map(t => t.n));
+
+    const hourLabels = Array.from({ length: 24 }, (_, i) => i + ':00');
+    drawBar('byHourChart', hourLabels, [
+      { label: 'Skanerlewler', data: d.by_hour, backgroundColor: color('primary') }
+    ]);
+
+    drawBar('topCarsChart',
+      d.top_cars.map(c => c.car__title),
+      [{ label: 'Kiriwler', data: d.top_cars.map(c => c.n), backgroundColor: color('primary') }],
+      'y');
+  }
+
+  function destroy(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+  function drawLine(id, labels, datasets) {
+    destroy(id);
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'line',
+      data: { labels, datasets: datasets.map(d => ({ ...d, tension: 0.3, fill: true })) },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+    });
+  }
+  function drawBar(id, labels, datasets, axis) {
+    destroy(id);
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'bar',
+      data: { labels, datasets },
+      options: { responsive: true, indexAxis: axis || 'x', plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+  }
+  function drawDoughnut(id, labels, data) {
+    destroy(id);
+    charts[id] = new Chart(document.getElementById(id), {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: ['#2563eb', '#059669', '#d97706', '#dc2626', '#7c3aed', '#9ca3af'] }]
+      },
+      options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+  }
+
+  document.getElementById('days').addEventListener('change', load);
+  load();
+</script>
+{% endblock %}

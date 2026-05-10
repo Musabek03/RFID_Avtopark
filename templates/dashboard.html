@@ -6,100 +6,90 @@
   .dashboard-grid {
     display: grid;
     grid-template-columns: 320px 1fr;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
+    gap: 1.25rem;
+    margin-bottom: 1.75rem;
   }
-
-  /* Asosiy blok */
   .main-stat-card {
     background: var(--primary);
     color: white;
     border-radius: var(--radius);
-    padding: 2rem;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+    padding: 1.75rem;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden;
+    box-shadow: 0 8px 18px -6px rgba(37, 99, 235, 0.45);
   }
   .main-stat-card::after {
     content: ''; position: absolute; right: -20px; top: -20px;
     width: 150px; height: 150px; border-radius: 50%;
     background: rgba(255, 255, 255, 0.1);
   }
-  .main-stat-title { font-size: 1.1rem; font-weight: 500; opacity: 0.9; }
-  .main-stat-number { font-size: 5.5rem; font-weight: 700; line-height: 1; margin: 0.5rem 0; }
-  
+  .main-stat-title { font-size: 1rem; font-weight: 500; opacity: 0.9; }
+  .main-stat-number { font-size: 4.5rem; font-weight: 700; line-height: 1; margin: 0.5rem 0; }
   .live-indicator {
     display: inline-flex; align-items: center; gap: 0.5rem;
-    font-size: 0.85rem; font-weight: 600; color: white;
+    font-size: 0.82rem; font-weight: 600; color: white;
     background: rgba(0, 0, 0, 0.2);
-    padding: 0.4rem 0.8rem; border-radius: 20px; width: max-content;
+    padding: 0.35rem 0.75rem; border-radius: 20px; width: max-content;
   }
   .live-indicator::before {
     content: ''; width: 8px; height: 8px; border-radius: 50%;
     background: #4ade80; box-shadow: 0 0 10px #4ade80;
     animation: pulse 2s infinite;
   }
-
   @keyframes pulse {
-    0% { transform: scale(0.95); opacity: 0.5; }
+    0% { transform: scale(0.95); opacity: 0.6; }
     50% { transform: scale(1.2); opacity: 1; }
-    100% { transform: scale(0.95); opacity: 0.5; }
+    100% { transform: scale(0.95); opacity: 0.6; }
   }
-
-  /* Kishi statlar */
-  .small-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem; }
+  .small-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
   .stat-box {
     background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 1.5rem;
+    border-radius: var(--radius); padding: 1.25rem;
     box-shadow: var(--shadow);
   }
-  .stat-box-title { font-size: 0.95rem; color: var(--text-muted); font-weight: 500; }
-  .stat-box-value { font-size: 2.2rem; font-weight: 700; color: var(--text-main); margin-top: 0.5rem; }
-  
-  @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
+  .stat-box-title { font-size: 0.9rem; color: var(--text-muted); font-weight: 500; }
+  .stat-box-value { font-size: 1.95rem; font-weight: 700; color: var(--text-main); margin-top: 0.4rem; }
+  @media (max-width: 900px) {
+    .dashboard-grid { grid-template-columns: 1fr; }
+    .main-stat-number { font-size: 3.5rem; }
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-grid">
-  <!-- Tiykargi korsetkish -->
   <div class="main-stat-card">
     <div class="main-stat-title">Házir avtoparkte</div>
-    <div class="main-stat-number">{{ count }}</div>
+    <div class="main-stat-number" id="js-count">{{ count }}</div>
     <div class="live-indicator">Real waqıtta</div>
   </div>
 
-  <!-- Baska statlar -->
   <div class="small-stats-grid">
     <div class="stat-box">
       <div class="stat-box-title">Dizimdegiler</div>
-      <div class="stat-box-value">{{ total_cars }}</div>
+      <div class="stat-box-value" id="js-total">{{ total_cars }}</div>
     </div>
     <div class="stat-box">
       <div class="stat-box-title">Búgingi kirisler</div>
-      <div class="stat-box-value">{{ today_entries }}</div>
+      <div class="stat-box-value" id="js-in">{{ today_entries }}</div>
     </div>
     <div class="stat-box">
       <div class="stat-box-title">Búgingi shıǵıslar</div>
-      <div class="stat-box-value">{{ today_exits }}</div>
+      <div class="stat-box-value" id="js-out">{{ today_exits }}</div>
     </div>
     <div class="stat-box">
       <div class="stat-box-title">Biykarlanǵanlar</div>
-      <div class="stat-box-value" style="color: var(--danger)">{{ today_denied }}</div>
+      <div class="stat-box-value" id="js-denied" style="color: var(--danger)">{{ today_denied }}</div>
     </div>
   </div>
 </div>
 
-<!-- Ishkaridagi mashinalar kestesi -->
 <div class="card">
   <div class="card-header">
-    <h2>Avtoparktegi avtomobiller</h2>
+    <h2>Avtoparktegi avtomobiller (<span id="js-table-count">{{ count }}</span>)</h2>
+    <span class="text-muted" style="font-size:0.85rem;" id="js-last-updated"></span>
   </div>
   <div class="card-body" style="padding:0">
-    {% if cars %}
     <table>
       <thead>
         <tr>
@@ -111,7 +101,7 @@
           <th>Status</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody id="js-cars-tbody">
         {% for car in cars %}
         <tr>
           <td class="text-muted">{{ forloop.counter }}</td>
@@ -124,19 +114,72 @@
         {% endfor %}
       </tbody>
     </table>
-    {% else %}
-    <div class="empty-state">
-      <div class="icon">🚘</div>
-      <p>Házirshe avtopark bos. Birde avtomobil joq.</p>
+    <div id="js-empty" {% if cars %}style="display:none"{% endif %}>
+      <div class="empty-state">
+        <div class="icon">🚘</div>
+        <p>Házirshe avtopark bos. Birde avtomobil joq.</p>
+      </div>
     </div>
-    {% endif %}
   </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  // Avtomat janaliw (30 sek)
-  setTimeout(() => location.reload(), 30000);
+  // AJAX live-update — full page reload qilmasdan dashboardni jangiramiz.
+  (function () {
+    const POLL_MS = 5000;
+    let prevCount = parseInt(document.getElementById('js-count').textContent, 10) || 0;
+
+    async function refresh() {
+      try {
+        const r = await fetch('{% url "dashboard_api" %}', { credentials: 'same-origin' });
+        if (!r.ok) return;
+        const d = await r.json();
+
+        document.getElementById('js-count').textContent = d.count;
+        document.getElementById('js-table-count').textContent = d.count;
+        document.getElementById('js-total').textContent = d.total_cars;
+        document.getElementById('js-in').textContent = d.today_entries;
+        document.getElementById('js-out').textContent = d.today_exits;
+        document.getElementById('js-denied').textContent = d.today_denied;
+
+        const tbody = document.getElementById('js-cars-tbody');
+        const empty = document.getElementById('js-empty');
+        tbody.innerHTML = '';
+        if (d.cars.length === 0) {
+          empty.style.display = '';
+        } else {
+          empty.style.display = 'none';
+          d.cars.forEach((c, i) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td class="text-muted">${i + 1}</td>
+              <td><span class="plate"></span></td>
+              <td></td>
+              <td><span class="mono-tag"></span></td>
+              <td><span class="duration"></span></td>
+              <td><span class="badge badge-inside">Ishinde</span></td>`;
+            tr.children[1].firstElementChild.textContent = c.title;
+            tr.children[2].textContent = c.owner || '—';
+            tr.children[3].firstElementChild.textContent = c.rfid_tag;
+            tr.children[4].firstElementChild.textContent = c.duration;
+            tbody.appendChild(tr);
+          });
+        }
+
+        const ts = new Date(d.server_time);
+        document.getElementById('js-last-updated').textContent =
+          'Sońǵı janalanıw: ' + ts.toLocaleTimeString();
+
+        if (d.count > prevCount) window.toast('Jańa avtomobil kirdi!', 'success');
+        else if (d.count < prevCount) window.toast('Avtomobil shıqtı', 'warning');
+        prevCount = d.count;
+      } catch (e) { /* network blip */ }
+    }
+
+    setInterval(refresh, POLL_MS);
+    refresh();
+  })();
 </script>
 {% endblock %}

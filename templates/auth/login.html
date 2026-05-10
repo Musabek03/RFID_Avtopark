@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Kiriw — Aqıllı Parkovka{% endblock %}
+
+{% block extra_css %}
+<style>
+  .login-wrap { max-width: 420px; margin: 4rem auto; }
+  .login-wrap .card { padding: 2rem; }
+  .login-wrap h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.4rem; text-align: center; }
+  .login-wrap p { text-align: center; color: var(--text-muted); margin-bottom: 1.5rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrap">
+  <div class="card">
+    <h1>Aqıllı Parkovka</h1>
+    <p>Kiriw ushın paydalanıwshı atı hám parolińizdi kiritiń</p>
+
+    {% if form.errors %}
+      <div class="msg msg-error">Paydalanıwshı atı yamasa parol nadurıs.</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="id_username">Paydalanıwshı atı</label>
+        <input type="text" name="username" id="id_username" class="form-control" autofocus required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="id_password">Parol</label>
+        <input type="password" name="password" id="id_password" class="form-control" required>
+      </div>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="btn btn-primary" style="width:100%;">Kiriw</button>
+    </form>
+  </div>
+</div>
+{% endblock %}

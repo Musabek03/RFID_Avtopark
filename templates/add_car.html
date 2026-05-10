@@ -3,38 +3,31 @@
 
 {% block extra_css %}
 <style>
-  .form-container {
-    max-width: 600px;
-    margin: 0 auto;
-  }
-  .page-header { margin-bottom: 2rem; text-align: center; }
-  .page-header h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--text-main); }
+  .form-container { max-width: 720px; margin: 0 auto; }
+  .page-header { margin-bottom: 1.5rem; text-align: center; }
+  .page-header h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; color: var(--text-main); }
   .page-header p { color: var(--text-muted); }
 
-  .form-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.5rem;
-  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.25rem; }
   .full-width { grid-column: 1 / -1; }
 
-  /* Skaner haqinda xabar */
   .scan-alert {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-soft-2);
     color: var(--primary);
-    padding: 1rem; border-radius: 8px;
-    margin-bottom: 1.5rem;
-    display: flex; align-items: center; gap: 1rem;
-    font-size: 0.95rem; font-weight: 500;
+    padding: 0.85rem 1rem; border-radius: 8px;
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 0.85rem;
+    font-size: 0.92rem; font-weight: 500;
   }
-  .scan-alert i { font-size: 1.2rem; animation: pulse 2s infinite; }
-
   .form-actions {
     display: flex; gap: 1rem;
-    margin-top: 1rem;
-    padding-top: 1.5rem;
+    margin-top: 0.75rem; padding-top: 1.25rem;
     border-top: 1px solid var(--border);
   }
   .form-actions .btn { flex: 1; }
+  .checkbox-row { display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem; }
+  @media (max-width: 600px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
 {% endblock %}
 
@@ -42,44 +35,63 @@
 <div class="form-container">
   <div class="page-header">
     <h1>Taza avtomobil qosıw</h1>
-    <p>Bazamızda joq bolǵan jańa RFID tag-ti dizimnen ótkeriń</p>
+    <p>Bazamızda joq jańa RFID tag-ti dizimnen ótkeriń</p>
   </div>
 
   {% if request.GET.tag %}
   <div class="scan-alert">
-    <i>📡</i>
+    <span>📡</span>
     <div>Skanerden tag oqıldı: <span style="font-family: var(--font-mono); font-weight: bold; color: var(--text-main);">{{ request.GET.tag }}</span></div>
   </div>
   {% endif %}
 
   <div class="card">
     <div class="card-body">
-      <form method="post">
+      <form method="post" novalidate>
         {% csrf_token %}
-        
+        {% if form.non_field_errors %}<div class="msg msg-error">{{ form.non_field_errors }}</div>{% endif %}
+
         <div class="form-grid">
-          <!-- Raqam -->
           <div class="form-group">
-            <label class="form-label">Ma'mleketlik nomeri</label>
-            <input type="text" name="title" class="form-control" placeholder="95 A 111 AA" value="{{ form.title.value|default:'' }}" required>
+            <label class="form-label">{{ form.title.label }}</label>
+            {{ form.title }}
+            {% if form.title.errors %}<small class="text-muted" style="color: var(--danger)">{{ form.title.errors.0 }}</small>{% endif %}
           </div>
 
-          <!-- Ega -->
           <div class="form-group">
-            <label class="form-label">Iyesi (F.I.SH)</label>
-            <input type="text" name="owner" class="form-control" placeholder="Atı familiyası" value="{{ form.owner.value|default:'' }}">
+            <label class="form-label">{{ form.owner.label }}</label>
+            {{ form.owner }}
           </div>
 
-          <!-- RFID -->
-          <div class="form-group full-width">
-            <label class="form-label">RFID Kodı</label>
-            <input type="text" name="rfid_tag" class="form-control" style="font-family: var(--font-mono); font-size: 1.1rem; letter-spacing: 2px;" placeholder="Skaner kútilmekte..." value="{{ form.rfid_tag.value|default:'' }}" required>
+          <div class="form-group">
+            <label class="form-label">{{ form.phone.label }}</label>
+            {{ form.phone }}
           </div>
 
-          <!-- Izoh -->
+          <div class="form-group">
+            <label class="form-label">{{ form.vehicle_type.label }}</label>
+            {{ form.vehicle_type }}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">{{ form.color.label }}</label>
+            {{ form.color }}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">{{ form.rfid_tag.label }}</label>
+            {{ form.rfid_tag }}
+            {% if form.rfid_tag.errors %}<small class="text-muted" style="color: var(--danger)">{{ form.rfid_tag.errors.0 }}</small>{% endif %}
+          </div>
+
           <div class="form-group full-width">
-            <label class="form-label">Qosımsha maǵlıwmat</label>
-            <textarea name="description" class="form-control" rows="3" placeholder="Mashina reńi, modeli yamasa basqa maǵlıwmatlar...">{{ form.description.value|default:'' }}</textarea>
+            <label class="form-label">{{ form.description.label }}</label>
+            {{ form.description }}
+          </div>
+
+          <div class="checkbox-row full-width">
+            {{ form.is_active }}
+            <label for="{{ form.is_active.id_for_label }}">{{ form.is_active.label }}</label>
           </div>
         </div>
 

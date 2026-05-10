@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Avtomobiller — Aqıllı Parkovka{% endblock %}
+
+{% block extra_css %}
+<style>
+  .header-actions { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem; gap: 1rem; flex-wrap: wrap; }
+  .page-title h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--text-main); }
+  .page-title p { color: var(--text-muted); font-size: 0.92rem; }
+  .car-filter-form { display: flex; gap: 0.75rem; align-items: center; padding: 1rem 1.5rem; background: var(--surface-2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .car-filter-form .form-control { min-width: 240px; }
+  .checkbox-inline { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--text-muted); font-size: 0.9rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+  <div class="page-title">
+    <h1>Avtomobiller</h1>
+    <p>Sistemada dizimge alınǵan barlıq avtomobillar</p>
+  </div>
+  <a href="{% url 'car_add' %}" class="btn btn-primary">+ Avto qosıw</a>
+</div>
+
+<div class="card">
+  <form method="get" class="car-filter-form">
+    <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Nomer, iyesi yamasa RFID...">
+    <label class="checkbox-inline">
+      <input type="checkbox" name="show_inactive" value="1" {% if show_inactive %}checked{% endif %}>
+      Aktiv emeslerin de kórsetiw
+    </label>
+    <button type="submit" class="btn btn-primary btn-sm">Súziw</button>
+    <a href="{% url 'car_list' %}" class="btn btn-ghost btn-sm">Tazalaw</a>
+  </form>
+
+  <div class="card-body" style="padding:0">
+    {% if page_obj.object_list %}
+    <table>
+      <thead>
+        <tr>
+          <th>Nomer</th>
+          <th>Iyesi</th>
+          <th>Túri</th>
+          <th>RFID</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for car in page_obj %}
+        <tr>
+          <td><span class="plate">{{ car.title }}</span></td>
+          <td>{{ car.owner|default:"—" }}</td>
+          <td>{{ car.get_vehicle_type_display }}</td>
+          <td><span class="mono-tag">{{ car.rfid_tag }}</span></td>
+          <td>
+            {% if not car.is_active %}<span class="badge badge-inactive">Aktiv emes</span>
+            {% elif car.is_inside %}<span class="badge badge-inside">Ishinde</span>
+            {% else %}<span class="badge badge-out">Sırtta</span>{% endif %}
+          </td>
+          <td style="text-align:right;">
+            <a href="{% url 'car_edit' car.pk %}" class="btn btn-ghost btn-sm">Ózgertiw</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% if page_obj.has_other_pages %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}<a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">‹</a>{% endif %}
+      <span class="current">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+      {% if page_obj.has_next %}<a href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">›</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="empty-state">
+      <div class="icon">🚗</div>
+      <p>Avtomobil tabılmadı.</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
