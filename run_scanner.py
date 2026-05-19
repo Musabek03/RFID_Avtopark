@@ -1,10 +1,3 @@
-"""Standalone TCP client that polls the UHF RFID reader and forwards EPC tags
-to the Django REST endpoint.
-
-Configuration is read from environment variables (or a `.env` file in the
-project root). See `.env.example` for the full list of supported variables.
-"""
-
 from __future__ import annotations
 
 import binascii

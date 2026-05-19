@@ -138,7 +138,7 @@ def history_export(request: HttpRequest) -> HttpResponse:
         "RFID",
         "Háleket",
         "Túrǵan waqtı",
-        "Eskerme",
+        "Eskertpe",
     ]
 
     def row(log: EntryLog):

@@ -36,6 +36,7 @@ ALLOWED_HOSTS = env("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env("DJANGO_CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [
+    'jazzmin',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

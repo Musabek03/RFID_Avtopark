@@ -51,7 +51,7 @@ class Car(models.Model):
     is_active = models.BooleanField(
         "Aktiv",
         default=True,
-        help_text="Aktiv emes kartalar uchın kiriw inkar etiledi.",
+        help_text="Aktiv emes kartalar ushın kiriw biykar etiledi.",
     )
 
     last_entry_time = models.DateTimeField("Sońǵı kiriw waqtı", null=True, blank=True)
@@ -93,7 +93,7 @@ class EntryLog(models.Model):
     class Action(models.TextChoices):
         IN = "IN", "Kiriw"
         OUT = "OUT", "Shıǵıw"
-        DENIED = "DENIED", "Inkar etildi"
+        DENIED = "DENIED", "Biykar etildi"
         COOLDOWN = "COOLDOWN", "Júdá tez (cooldown)"
 
     car = models.ForeignKey(
@@ -116,7 +116,7 @@ class EntryLog(models.Model):
     action = models.CharField(
         "Háleket", max_length=10, choices=Action.choices, default=Action.DENIED
     )
-    note = models.CharField("Eskerme", max_length=255, blank=True)
+    note = models.CharField("Eskertpe", max_length=255, blank=True)
 
     class Meta:
         verbose_name = "Kirdi-shıqtı jurnalı"

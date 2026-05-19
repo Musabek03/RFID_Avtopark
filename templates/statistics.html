@@ -44,12 +44,12 @@
   <div class="stat-tile"><div class="label">Aktiv avtomobiller</div><div class="value" id="t-active">—</div></div>
   <div class="stat-tile"><div class="label">Hazir ishinde</div><div class="value" id="t-inside">—</div></div>
   <div class="stat-tile"><div class="label">Skanerlewler (dáwir)</div><div class="value" id="t-scans">—</div></div>
-  <div class="stat-tile"><div class="label">Inkar etilgenler</div><div class="value" id="t-denied" style="color: var(--danger)">—</div></div>
+  <div class="stat-tile"><div class="label">biykar etilgenler</div><div class="value" id="t-denied" style="color: var(--danger)">—</div></div>
 </div>
 
 <div class="charts">
   <div class="chart-card">
-    <h3>Kúnlik dinamika (kiriw / shıǵıw / inkar)</h3>
+    <h3>Kúnlik dinamika (kiriw / shıǵıw / biykar)</h3>
     <canvas id="byDayChart" height="120"></canvas>
   </div>
   <div class="chart-card">
@@ -108,7 +108,7 @@
     drawLine('byDayChart', byDay.days, [
       { label: 'Kiriw',  data: byDay.IN,  borderColor: color('success'), backgroundColor: color('success') + '33' },
       { label: 'Shıǵıw', data: byDay.OUT, borderColor: color('warning'), backgroundColor: color('warning') + '33' },
-      { label: 'Inkar',  data: byDay.DENIED, borderColor: color('danger'), backgroundColor: color('danger') + '33' },
+      { label: 'biykar',  data: byDay.DENIED, borderColor: color('danger'), backgroundColor: color('danger') + '33' },
     ]);
 
     drawDoughnut('byTypeChart',

@@ -51,7 +51,7 @@
 <div class="card">
   <form method="get" class="filter-form">
     <div>
-      <label>Háleket</label>
+      <label>Háreket</label>
       {{ form.action }}
     </div>
     <div>
@@ -66,7 +66,7 @@
       <label>Sánege shekem</label>
       {{ form.date_to }}
     </div>
-    <button type="submit" class="btn btn-primary">Súziw</button>
+    <button type="submit" class="btn btn-primary">Filtrlaw</button>
     <a href="{% url 'history' %}" class="btn btn-ghost">Tazalaw</a>
   </form>
 
@@ -82,7 +82,7 @@
           <th>Iyesi</th>
           <th>RFID Tag</th>
           <th>Túrǵan waqtı</th>
-          <th>Háleket</th>
+          <th>Háreket</th>
         </tr>
       </thead>
       <tbody>
@@ -116,7 +116,7 @@
             {% elif log.action == 'COOLDOWN' %}
               <span class="badge badge-cooldown">Cooldown</span>
             {% else %}
-              <span class="badge badge-denied">Inkar etildi</span>
+              <span class="badge badge-denied">Biykarlandı</span>
             {% endif %}
           </td>
         </tr>
